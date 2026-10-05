@@ -1,0 +1,26 @@
+# Secrets never enter git
+.env
+.env.*
+*.env
+*.env.sh
+env.sh
+*.key
+*.pem
+*.p12
+*.pfx
+*.token
+*.secret
+secrets/
+credentials*
+id_rsa*
+id_ed25519*
+
+# Build output
+target/
+dist/
+
+# Editors and OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,16 @@
+Mule Binary License 1.0
+Copyright (c) 2026 Harry Ma. All rights reserved.
+
+Permission is granted, free of charge, to any person to download, install and
+run the unmodified Mule binaries for any purpose, including commercial use.
+You may not sell the binaries or redistribute them except by linking to the
+official release page.
+
+The documentation under docs/ is licensed separately under CC BY 4.0.
+Third-party components are listed with their licenses in THIRD-PARTY-LICENSES.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+SOFTWARE OR ITS USE.
