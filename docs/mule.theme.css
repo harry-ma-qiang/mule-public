@@ -1,0 +1,70 @@
+/* mule.theme.css: layer-2 theme for mule.js (THEME1-THEME4 in notes/mule-js-math.md).
+   Appearance only: colours, borders, radius, shadow, hover / press looks. No rule here may set a
+   position, size, margin, padding of a lattice box, text content or pointer behaviour beyond buttons.
+   Values follow the Tailwind palette (slate base, indigo accent), radius md, shadow sm. */
+:root {
+  --bg: #f8fafc; --surface: #ffffff; --ink: #1e293b; --muted: #64748b; --faint: #6b7280;
+  --line: #e2e8f0; --line-strong: #64748b; --accent: #4f46e5; --accent-ring: #6366f1;
+  --accent-soft: #eef2ff; --accent-hover: #e0e7ff; --press: #c7d2fe;
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06); --radius-md: 0.375rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #020617; --surface: #0f172a; --ink: #e2e8f0; --muted: #94a3b8; --faint: #94a3b8;
+    --line: #1e293b; --line-strong: #64748b; --accent: #a5b4fc; --accent-ring: #818cf8;
+    --accent-soft: #1e1b4b; --accent-hover: #312e81; --press: #3730a3;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  }
+}
+
+/* page chrome (index.html), outside the engine screen */
+.mule-body { margin: 0; padding: 16px; background: var(--bg); color: var(--ink);
+  font: 13.3px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace; }
+.mule-title { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+.mule-nav { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; font-size: 12px; }
+.mule-nav a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-ring); }
+.mule-host { max-width: 100%; overflow-x: auto; }
+.mule-both { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 32px; }
+.mule-status { margin-top: 12px; font-size: 12px; color: var(--muted); }
+.mule-note { margin-top: 24px; font-size: 11px; color: var(--faint); }
+pre[data-mule-view] { color: var(--ink); background: var(--surface); }
+
+/* engine screen: structure needed by the projection (position, clipping) */
+/* why: borders sit inside the lattice box (Tailwind preflight did this before), so pi(rect) holds. */
+.mule-screen, .mule-screen * { box-sizing: border-box; }
+.mule-screen { position: relative; overflow: hidden; background: var(--surface); color: var(--ink);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); }
+.mule-screen > div, .mule-page > div, .mule-page > button { position: absolute; }
+.mule-chrome { white-space: pre; overflow: hidden; color: var(--faint); }
+.mule-part { white-space: pre; overflow: hidden; }
+
+/* decorations, each one a glyph class of the ASCII screen (B2-B5) */
+.mule-line { border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.mule-ends { border: 1px solid var(--line-strong); border-radius: var(--radius-md); }
+.mule-round { border-radius: 9999px; }
+.mule-under { border-bottom: 1px solid var(--line-strong); }
+.mule-legend { background: var(--surface); }
+
+/* hit buttons (H1-H3) */
+.mule-press { margin: 0; padding: 0; border: 0; font: inherit; cursor: pointer; background: var(--accent-soft); }
+.mule-press.mule-ends { border: 1px solid var(--accent-ring); }
+.mule-press:hover { background: var(--accent-hover); }
+.mule-press:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: -2px; }
+
+/* text roles, chosen by existing attributes only */
+.mule-part[data-mule-part="title"] { font-weight: 600; color: var(--ink); }
+.mule-part[data-mule-kind="button"] { color: var(--accent); font-weight: 600; }
+.mule-part[data-mule-id*="/h:"] { color: var(--muted); font-weight: 600; }
+.mule-part[data-mule-id="text:at"], .mule-part[data-mule-id="text:demo"] { color: var(--muted); }
+.mule-part[data-mule-id="text:act"] { color: var(--accent); }
+
+/* BAR1: progress cells by owning part; the glyphs stay in the DOM (transparent), the AI view keeps # and . */
+.mule-part[data-mule-glyph="fill"] { color: transparent; background: var(--accent-ring); }
+.mule-part[data-mule-glyph="track"] { color: transparent; background: var(--line); }
+
+/* motion (MOT1), same palette */
+.mule-motion-announce { outline: 2px solid var(--accent-ring); outline-offset: -2px; animation: mule-pulse 1s ease-in-out infinite; }
+.mule-part.mule-motion-announce { background: var(--accent-soft); }
+.mule-motion-press { background: var(--press) !important; box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.2); }
+@keyframes mule-pulse { 50% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .mule-motion-announce { animation: none; } }

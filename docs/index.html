@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harry Agent Office</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234f46e5'/%3E%3Cpath d='M4 12V4l4 5 4-5v8' stroke='white' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="mule.theme.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
+</head>
+<body class="mule-body">
+<h1 class="mule-title">Harry Agent</h1>
+<nav class="mule-nav"><a href="?view=web">web</a><a href="?view=ai">ai</a><a href="?view=both">both</a></nav>
+<div id="mule" class="mule-host"></div>
+<p id="mule-status" class="mule-status">loading...</p>
+<p id="demo-note" class="mule-note">demo note (page chrome, not engine output): web and ai screen use one projection taken from statement.grid; ai views show engine text as is; read only.</p>
+<script src="mule.js"></script>
+<script>
+Mule.start({ url: "https://jwltremjyuywpaxrntso.supabase.co", app: "harryagent", home: "office", key: "sb_publishable_MiBpQTvvbXkA5IXGJUmZOQ_YJg8b7_-" }, document);
+</script>
+</body>
+</html>

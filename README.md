@@ -38,3 +38,7 @@ or container first.
 Released artifacts: Mule Binary License 1.0. Documentation under docs/:
 CC BY 4.0. Third-party components are listed in THIRD-PARTY-LICENSES inside
 each release.
+
+## Live demo
+
+https://harry-ma-qiang.github.io/mule-public/ -- a read-only "agent office" page drawn from a statement solved by the Mule sketch engine; the same statement gives the web view and the AI text view.
