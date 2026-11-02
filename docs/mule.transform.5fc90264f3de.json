@@ -1,0 +1,183 @@
+{
+ "v": "transform/1",
+ "name": "chess",
+ "licence": "pieces: Cburnett, Wikimedia Commons, own work 2006-12-27, triple licence GFDL (migrated to CC BY-SA 3.0) / BSD / GPL; used here under BSD; files unmodified; see pieces/ATTRIBUTION.txt",
+ "rows": [
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "K",
+   "token": "icon:chess.wk@56f55c784843",
+   "asset": "pieces/wk.56f55c784843.svg",
+   "sha256": "sha256:56f55c784843b1ac272b8745d740aa2a3e6c585513ef889978916f88e5d0b70b",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_klt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "Q",
+   "token": "icon:chess.wq@b72b864e2a5b",
+   "asset": "pieces/wq.b72b864e2a5b.svg",
+   "sha256": "sha256:b72b864e2a5b6c8f8afb7f260130c10e649ff063f4ef58190c00a35c56364327",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_qlt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "R",
+   "token": "icon:chess.wr@4d42ab45afd8",
+   "asset": "pieces/wr.4d42ab45afd8.svg",
+   "sha256": "sha256:4d42ab45afd862c704eb9b35317102d453a7a6b9b71d40f18958c8eadc829e4b",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_rlt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "B",
+   "token": "icon:chess.wb@1d7beace24d4",
+   "asset": "pieces/wb.1d7beace24d4.svg",
+   "sha256": "sha256:1d7beace24d455c923ee80d27125963eaf0287b956c5576dbf790c97ac0b97eb",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_blt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "N",
+   "token": "icon:chess.wn@548679120715",
+   "asset": "pieces/wn.548679120715.svg",
+   "sha256": "sha256:5486791207156f7ae8b8678187648df45085d726334c2862e73b077dea00641e",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_nlt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "P",
+   "token": "icon:chess.wp@cc7de30708dc",
+   "asset": "pieces/wp.cc7de30708dc.svg",
+   "sha256": "sha256:cc7de30708dcec8f4d593a89d10893d5f9c063682039a1c441e86c44cf2096db",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_plt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "k",
+   "token": "icon:chess.bk@025eea92e0ef",
+   "asset": "pieces/bk.025eea92e0ef.svg",
+   "sha256": "sha256:025eea92e0ef8eb1fd06b1c58d0d112948f08bf66cea6b5d003659569949b41c",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_kdt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "q",
+   "token": "icon:chess.bq@70191a3fbc72",
+   "asset": "pieces/bq.70191a3fbc72.svg",
+   "sha256": "sha256:70191a3fbc729ef629661e2419a66ab8024c49277aab8ccae3a5ef61372ab802",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_qdt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "r",
+   "token": "icon:chess.br@6abf617a9e26",
+   "asset": "pieces/br.6abf617a9e26.svg",
+   "sha256": "sha256:6abf617a9e26902e0734d85897c9ca55e29d7be2928142aa21032c38967e34ba",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_rdt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "b",
+   "token": "icon:chess.bb@ba67da76ce91",
+   "asset": "pieces/bb.ba67da76ce91.svg",
+   "sha256": "sha256:ba67da76ce919addc60ecb8b46801def073dd54149b2c038a2d07a16d904d5e4",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_bdt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "n",
+   "token": "icon:chess.bn@735cc58315b1",
+   "asset": "pieces/bn.735cc58315b1.svg",
+   "sha256": "sha256:735cc58315b123a56632d4877a6b976c827481fa97bf9a5c8f459ec969bc2549",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_ndt45.svg"
+  },
+  {
+   "unit": "label",
+   "kind": "button",
+   "in": "square",
+   "block": "p",
+   "token": "icon:chess.bp@4413bf7c18a3",
+   "asset": "pieces/bp.4413bf7c18a3.svg",
+   "sha256": "sha256:4413bf7c18a341f9723d97e6f92c985e30b6167b037e80842cea59b7541bb074",
+   "source": "https://commons.wikimedia.org/wiki/File:Chess_pdt45.svg"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": "|(",
+   "token": "class:mule-tile-light"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": "|[",
+   "token": "class:mule-tile-light-legal"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": "*|(",
+   "token": "class:mule-tile-light-sel"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": "*|[",
+   "token": "class:mule-tile-light-sel-legal"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": ".......|(",
+   "token": "class:mule-tile-dark"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": ".......|[",
+   "token": "class:mule-tile-dark-legal"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": "*......|(",
+   "token": "class:mule-tile-dark-sel"
+  },
+  {
+   "unit": "tile",
+   "kind": "square",
+   "in": "board",
+   "block": "*......|[",
+   "token": "class:mule-tile-dark-sel-legal"
+  }
+ ]
+}

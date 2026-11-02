@@ -1,0 +1,47 @@
+Chess piece images in this folder
+
+Author: Cburnett (https://commons.wikimedia.org/wiki/User:Cburnett), own work, 2006-12-27
+  (Commons file page fields: |author={{U|Cburnett}} |source={{own}} |date=2006-12-27).
+Source: Wikimedia Commons, 12 file pages (each URL is also in mule.transform.json, field "source"):
+  https://commons.wikimedia.org/wiki/File:Chess_klt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_qlt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_rlt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_blt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_nlt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_plt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_kdt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_qdt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_rdt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_bdt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_ndt45.svg
+  https://commons.wikimedia.org/wiki/File:Chess_pdt45.svg
+Licence on Commons (same tag on all 12 pages, checked 2026-11-02): {{self|GFDL|migration=relicense|BSD|GPL}}
+  = the author's choice of GNU FDL (with the CC BY-SA 3.0 migration), BSD licence ({{BSD}}, default
+  version = 3-clause), or GNU GPL v2 or later. This project uses the files under the BSD licence.
+  BSD licence reference named on the Commons page: http://opensource.org/licenses/bsd-license.php
+Changes: none. Files are byte-for-byte copies of the Commons originals (sha1 checked against the Commons
+  API on 2026-11-02), renamed to <colour><piece>.<sha256 first 12 hex>.svg; the full sha256 of each file
+  is in mule.transform.json, field "sha256".
+
+BSD licence text, as shown on the Commons file pages ("The author" = Cburnett, see Author above):
+
+Copyright © The author
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided
+that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
+   following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and
+   the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of The author nor the names of its contributors may be used to endorse or promote
+   products derived from this software without specific prior written permission.
+
+This software is provided by The author and contributors "as is" and any express or implied warranties,
+including, but not limited to, the implied warranties of merchantability and fitness for a particular
+purpose are disclaimed. In no event shall The author and contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not limited to, procurement of
+substitute goods or services; loss of use, data, or profits; or business interruption) however caused and
+on any theory of liability, whether in contract, strict liability, or tort (including negligence or
+otherwise) arising in any way out of the use of this software, even if advised of the possibility of such
+damage.

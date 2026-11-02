@@ -68,3 +68,12 @@ pre[data-mule-view] { color: var(--ink); background: var(--surface); }
 .mule-motion-press { background: var(--press) !important; box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.2); }
 @keyframes mule-pulse { 50% { outline-color: transparent; } }
 @media (prefers-reduced-motion: reduce) { .mule-motion-announce { animation: none; } }
+
+/* TR-PAINT (transform table mule.transform.json): look only. A unit's glyphs stay in the DOM, transparent;
+   tiles take the tone and highlight named by their token; icons are drawn by mule.transform.js. */
+.mule-part[data-mule-t] { color: transparent; }
+.mule-tile { background: #f0d9b5; }
+.mule-tile-dark, .mule-tile-dark-sel, .mule-tile-dark-legal { background: #b58863; }
+.mule-tile-light-sel, .mule-tile-dark-sel { box-shadow: inset 0 0 0 3px #f59e0b; }
+.mule-tile-light-legal, .mule-tile-dark-legal { box-shadow: inset 0 0 0 3px var(--accent-ring); }
+.mule-icon { object-fit: contain; }

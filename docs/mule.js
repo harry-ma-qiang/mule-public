@@ -119,10 +119,16 @@
   }
 
   // B4: Ends(n) = rows r in the rect where cell (x, r) is an open glyph, (x2, r) its close glyph, no text cell.
-  function endRows(F, n, tc) {
+  // B4b: an end pair belongs to the deepest node: a row whose left or right edge cell lies inside a deeper node
+  // is that node's, not n's (a board and its edge squares, a square and its button).
+  function endRows(F, n, tc, nodes) {
     var x2 = n.x + n.w - 1, out = [];
     if (n.w < 2) return out;
+    var deeper = function (c, r) {
+      return (nodes || []).some(function (m) { return (m.depth || 0) > (n.depth || 0) && c >= m.x && c < m.x + m.w && r >= m.y && r < m.y + m.h; });
+    };
     for (var r = n.y; r < n.y + n.h; r++) {
+      if (deeper(n.x, r) || deeper(x2, r)) continue;
       var o = at(F, n.x, r);
       if (ENDS[o] && at(F, x2, r) === ENDS[o] && !tc[n.x + "," + r] && !tc[x2 + "," + r]) out.push({ r: r, round: o === "(" });
     }
@@ -151,13 +157,37 @@
     return out;
   }
 
+  // T6: ASCII cells that no text run, box line, end pair or underline accounts for (board fill ".", the selected
+  // marker "*") are READ from the ASCII and drawn as glyph runs owned by the deepest node whose rect holds them.
+  function orphanRuns(F, st, tc, used) {
+    var g = st.grid, out = [], seg = null;
+    for (var r = 0; r < g.rows; r++) {
+      seg = null;
+      for (var c = 0; c < g.cols; c++) {
+        var ch = at(F, c, r), k = c + "," + r, own = null;
+        if (ch === " " || tc[k] || used[k]) { seg = null; continue; }
+        st.nodes.forEach(function (n) {
+          if (c >= n.x && c < n.x + n.w && r >= n.y && r < n.y + n.h && (!own || (n.depth || 0) >= (own.depth || 0))) own = n;
+        });
+        if (!own) { seg = null; continue; }
+        if (seg && seg.id === own.id && seg.x + seg.t.length === c) { seg.t += ch; continue; }
+        seg = { id: own.id, kind: own.kind, part: "glyph", gp: "cell", x: c, y: r, t: ch };
+        out.push(seg);
+      }
+    }
+    out.forEach(function (u) { u.w = Array.from(u.t).length; });
+    return out;
+  }
+
   // plan: statement -> boxes in drawing order (pure; tested without a DOM).
   function plan(st) {
     var F = frameOf(st), g = st.grid, hit = st.hit || {}, out = [];
-    var rs = runs(st), tc = textCells(rs), boxed = {}, E = {};
+    var rs = runs(st), tc = textCells(rs), boxed = {}, E = {}, used = {};
     st.nodes.forEach(function (n) {
       if (!isBox(F, n, tc)) return;
       boxed[n.id] = n;
+      for (var bx = n.x; bx < n.x + n.w; bx++) used[bx + "," + n.y] = used[bx + "," + (n.y + n.h - 1)] = 1;
+      for (var by = n.y; by < n.y + n.h; by++) used[n.x + "," + by] = used[(n.x + n.w - 1) + "," + by] = 1;
       for (var c = n.x + 1; c < n.x + n.w - 1; c++) E[c + "," + n.y] = E[c + "," + (n.y + n.h - 1)] = 1;
       for (var r = n.y + 1; r < n.y + n.h - 1; r++) E[n.x + "," + r] = E[(n.x + n.w - 1) + "," + r] = 1;
     });
@@ -168,7 +198,8 @@
       // N1: one carrier per node at pi(rect); it has no style, text or pointer target.
       out.push({ role: "node", id: n.id, kind: n.kind, box: pi(g, n.x, n.y, n.w, n.h, z), cls: "" });
       var hr = n.press ? hitRects(hit[n.id]) : [];
-      var ends = endRows(F, n, tc);
+      var ends = endRows(F, n, tc, st.nodes);
+      ends.forEach(function (e) { used[n.x + "," + e.r] = used[(n.x + n.w - 1) + "," + e.r] = 1; });
       hr.forEach(function (r) {
         // H1 + H3: the button is the engine hit rect; it carries the end glyph box when the ASCII draws one there.
         var glyph = ends.some(function (e) { return e.r >= r.y && e.r < r.y + r.h; });
@@ -184,9 +215,11 @@
         out.push({ role: "deco", id: n.id, kind: n.kind, box: pi(g, n.x, e.r, n.w, 1, z), cls: CLS.ends + (e.round ? " " + CLS.round : "") });
       });
       underRows(F, n, tc).forEach(function (r) {
+        for (var ux = n.x; ux < n.x + n.w; ux++) used[ux + "," + r] = 1;
         out.push({ role: "deco", id: n.id, kind: n.kind, box: pi(g, n.x, r, n.w, 1, z), cls: CLS.under });
       });
     });
+    rs = rs.concat(orphanRuns(F, st, tc, used));
     var zOf = {};
     out.forEach(function (b) { if (b.role === "node") zOf[b.id] = b.box.z; });
     rs.forEach(function (u) {
@@ -256,6 +289,8 @@
         if (onPress) el.addEventListener("click", function () { onPress(b); });
       }
     });
+    // TR-PAINT: look-only transform units (icons, tiles) after the plan; no box, hit or text changes.
+    if (root.MuleTransform && api.transform) root.MuleTransform.paint(doc, page, st, api.transform);
     host.replaceChildren(screen);
     return page;
   }
@@ -329,13 +364,20 @@
   // NAV1: a pressed cmd "nav.<page>" names the target page; any other cmd has no inbound path yet.
   function navTarget(cmd) { var m = /^nav\.(.+)$/.exec(cmd || ""); return m && PAGE_RE.test(m[1]) ? m[1] : null; }
 
+  // LOCAL1: a local review page (cfg.local = a relative folder, no url, no key) reads <folder><page>.json from
+  // its own server only; subscribe() needs a key, so it never opens a channel.
   function fetchLatest(cfg, page) {
-    var o = cfg.url + "/storage/v1/object/public/mule-statement/" + encodeURIComponent(cfg.app) + "/" +
+    var o = (cfg.local ? cfg.local : cfg.url + "/storage/v1/object/public/mule-statement/" + encodeURIComponent(cfg.app) + "/") +
       encodeURIComponent(page || cfg.home) + ".json?t=" + Date.now();
     return fetch(o, { cache: "no-store" }).then(function (r) {
       if (r.status === 400 || r.status === 404) return null;
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
+    }).then(function (row) {
+      // TR-LOAD: a row that names a transform table (theme.transform = its sha256) loads it once before drawing.
+      if (!row || !row.theme || !root.MuleTransform) return row;
+      return root.MuleTransform.load(row.theme).then(function (T) { api.transform = T; return row; },
+        function (e) { api.transform = null; api.transformError = e.message; return row; });
     });
   }
 
