@@ -179,6 +179,25 @@
     return out;
   }
 
+  // T7: with Phi in the statement (phi/1, review build), a run keeps only the cells Phi gives its node: a later
+  // plane (an open menu over a chart summary) takes the rest, as in the engine screen. No Phi: runs unchanged.
+  function phiClip(st, rs) {
+    var P = st.phi, idx = {}, out = [];
+    if (!P || !P.own) return rs;
+    st.nodes.forEach(function (n, i) { idx[n.id] = i; });
+    var owner = function (c, r) { var o = null; (P.own[r] || []).forEach(function (q) { if (c >= q[0] && c < q[0] + q[1]) o = q[2]; }); return o; };
+    rs.forEach(function (u) {
+      var ch = Array.from(u.t), seg = null;
+      for (var k = 0; k < u.w; k++) {
+        if (owner(u.x + k, u.y) !== idx[u.id]) { seg = null; continue; }
+        if (!seg) { seg = { id: u.id, kind: u.kind, part: u.part, gp: u.gp, x: u.x + k, y: u.y, t: "", w: 0 }; out.push(seg); }
+        seg.t += ch[k];
+        seg.w += 1;
+      }
+    });
+    return out;
+  }
+
   // plan: statement -> boxes in drawing order (pure; tested without a DOM).
   function plan(st) {
     var F = frameOf(st), g = st.grid, hit = st.hit || {}, out = [];
@@ -219,7 +238,7 @@
         out.push({ role: "deco", id: n.id, kind: n.kind, box: pi(g, n.x, r, n.w, 1, z), cls: CLS.under });
       });
     });
-    rs = rs.concat(orphanRuns(F, st, tc, used));
+    rs = phiClip(st, rs).concat(orphanRuns(F, st, tc, used));
     var zOf = {};
     out.forEach(function (b) { if (b.role === "node") zOf[b.id] = b.box.z; });
     rs.forEach(function (u) {
@@ -286,11 +305,14 @@
         if (b.kind === "select") { el.setAttribute("role", "combobox"); el.setAttribute("aria-expanded", "false"); el.setAttribute("aria-haspopup", "listbox"); }
         if (b.kind === "checkbox") { el.setAttribute("role", "checkbox"); el.setAttribute("aria-checked", String(on)); }
         if (b.kind === "radio-opt") { el.setAttribute("role", "radio"); el.setAttribute("aria-checked", String(on)); }
+        if (b.kind === "option") { el.setAttribute("role", "option"); el.setAttribute("aria-selected", String(on)); }
         if (onPress) el.addEventListener("click", function () { onPress(b); });
       }
     });
     // TR-PAINT: look-only transform units (icons, tiles) after the plan; no box, hit or text changes.
     if (root.MuleTransform && api.transform) root.MuleTransform.paint(doc, page, st, api.transform);
+    // SF-PAINT: read-only surfaces ink only the free cells of Phi (mule.surface.js; loaded by the review page only).
+    if (root.MuleSurface && st.phi) root.MuleSurface.paint(doc, page, st);
     host.replaceChildren(screen);
     return page;
   }
