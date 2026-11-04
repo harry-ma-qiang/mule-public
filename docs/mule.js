@@ -336,76 +336,52 @@
   function modeOf(cfg) { var m = param(cfg, "mode"); return MODES[m] ? m : "aiv"; }
   function viewOf(cfg) { var v = param(cfg, "view"); return v === "ai" || v === "both" ? v : "web"; }
 
-  // DIFF4: ops edit strings and marks of a copy of the base; the last element [s, e, r] replaces chars s..e with r.
-  function edit(t, o) { var sp = o[o.length - 1]; return (t || "").slice(0, sp[0]) + sp[2] + (t || "").slice(sp[1]); }
-  var OPS = {
-    n: function (st, o) { var n = st.nodes[o[1]]; n.text = edit(n.text, o); },
-    nl: function (st, o) { var n = st.nodes[o[1]]; n.lines[o[2]] = edit(n.lines[o[2]], o); },
-    np: function (st, o) { var q = st.nodes[o[1]].parts[o[2]]; q.text = edit(q.text, o); },
-    nm: function (st, o) { st.nodes[o[1]].marks = o[2]; },
-    a: function (st, o) { st.ascii[o[1]] = edit(st.ascii[o[1]], o); },
-    t: function (st, o) { st.ai_text[o[1]] = edit(st.ai_text[o[1]], o); },
-    v: function (st, o) { st.aiv[o[1]] = edit(st.aiv[o[1]], o); },
-    act: function (st, o) { st.activity = o[1]; },
-    p: function (st, o) { st.spec[o[1]] = edit(st.spec[o[1]], o); },
-    sh: function (st, o) { st.spec_hash = o[1]; }
-  };
-  // DIFF5: canonical JSON (sorted keys, no spaces) and sha256, the same bytes the engine hashes.
-  function canon(v) {
-    if (Array.isArray(v)) return "[" + v.map(canon).join(",") + "]";
-    if (v && typeof v === "object") return "{" + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ":" + canon(v[k]); }).join(",") + "}";
-    return JSON.stringify(v);
-  }
-  function sha(text) {
-    return root.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
-      return "sha256:" + Array.from(new Uint8Array(buf)).map(function (x) { return x.toString(0x10).padStart(2, "0"); }).join("");
-    });
-  }
-  function patchOf(baseSt, p) {
-    var st = JSON.parse(JSON.stringify(baseSt));
-    try {
-      if (!(root.crypto && root.crypto.subtle)) throw new Error("no subtle crypto");
-      p.ops.forEach(function (o) { if (!OPS[o[0]]) throw new Error("op " + o[0]); OPS[o[0]](st, o); });
-    } catch (e) { return Promise.reject(e); }
-    return Promise.all([sha(canon(st.nodes)), sha(st.ascii.join("\n")), sha(st.ai_text.join("\n")),
-      sha((st.aiv || []).join("\n"))]).then(function (d) {
-      var want = [p.d.n, p.d.a, p.d.t, p.d.v || ""];
-      var pre = "sha256:".length;
-      if (d.some(function (x, i) { return want[i] && x.slice(pre, pre + want[i].length) !== want[i]; })) throw new Error("digest mismatch");
-      st.summary.digest = d[0];
-      st.ascii_digest = d[1];
-      st.ai_text_digest = d[2];
-      if (st.aiv) st.aiv_digest = d[d.length - 1];
-      return st;
-    });
-  }
-
-  // NAV2: page = ?page when it is a plain name, else the host page's home; NAV3: object <app>/<page>.json.
+  // NAV2: page = ?page when it is a plain name, else the host page's home; NAV3: object <app>/s1/<page>.json.
   var PAGE_RE = /^[a-z0-9-]+$/;
   function pageOf(cfg) { var p = root.location ? new URLSearchParams(root.location.search).get("page") : null; return p && PAGE_RE.test(p) ? p : cfg.home; }
   // NAV1: a pressed cmd "nav.<page>" names the target page; any other cmd has no inbound path yet.
   function navTarget(cmd) { var m = /^nav\.(.+)$/.exec(cmd || ""); return m && PAGE_RE.test(m[1]) ? m[1] : null; }
 
-  // LOCAL1: a local review page (cfg.local = a relative folder, no url, no key) reads <folder><page>.json from
-  // its own server only; subscribe() needs a key, so it never opens a channel.
+  // SIG1 (SEC-PULL-1 plan P): a public snapshot is a signed envelope; mule.verify.js checks its ed25519 signature
+  // against a pinned key BEFORE the body is parsed. No verifier = nothing is drawn. The same bytes as the last
+  // verified read (an ETag 304 revalidation) are SAME: not verified again, not drawn again.
+  // LOCAL1: a local review page (cfg.local = a relative folder) reads unsigned <folder><page>.json from its own
+  // server only; the public page config has no cfg.local.
+  var SAME = { same: true }, SEEN = {};
+  function cannot() { var e = new Error("this browser cannot verify Ed25519 signatures"); e.cannot = true; return e; }
   function fetchLatest(cfg, page) {
-    var o = (cfg.local ? cfg.local : cfg.url + "/storage/v1/object/public/mule-statement/" + encodeURIComponent(cfg.app) + "/") +
-      encodeURIComponent(page || cfg.home) + ".json?t=" + Date.now();
-    return fetch(o, { cache: "no-store" }).then(function (r) {
+    var p = page || cfg.home, o = cfg.local ? cfg.local + encodeURIComponent(p) + ".json?t=" + Date.now() :
+      cfg.url + "/storage/v1/object/public/mule-statement/" + encodeURIComponent(cfg.app) + "/s1/" + encodeURIComponent(p) + ".json";
+    // why: no ?t= and cache "no-cache" on the public path, so the browser revalidates with the ETag (304 when unchanged).
+    return fetch(o, { cache: cfg.local ? "no-store" : "no-cache" }).then(function (r) {
       if (r.status === 400 || r.status === 404) return null;
       if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
+      return r.text();
+    }).then(function (text) {
+      if (text == null) return null;
+      if (cfg.local) return JSON.parse(text);
+      if (SEEN[o] === text) return SAME;
+      var V = root.MuleVerify;
+      if (!V || !V.verifySnap) throw cannot();
+      return V.verifySnap(text, cfg.app, p).then(function (b) {
+        SEEN[o] = text;
+        return { rev: b.rev, updated_at: b.issued_at, issued_at: b.issued_at, next_s: b.next_s, fresh_s: b.fresh_s,
+          theme: b.theme, statement: b.statement, signed: true };
+      });
     }).then(function (row) {
       // TR-LOAD: a row that names a transform table (theme.transform = its sha256) loads it once before drawing.
-      if (!row || !row.theme || !root.MuleTransform) return row;
+      if (!row || row === SAME || !row.theme || !root.MuleTransform) return row;
       return root.MuleTransform.load(row.theme).then(function (T) { api.transform = T; return row; },
         function (e) { api.transform = null; api.transformError = e.message; return row; });
     });
   }
 
+  function utc(ms) { return new Date(ms).toISOString().slice(11, 19) + " UTC"; }
+
   function start(cfg, doc) {
     var host = doc.getElementById(cfg.mount || "mule");
     var status = doc.getElementById(cfg.status || "mule-status");
+    var clockEl = doc.getElementById(cfg.clock || "mule-clock");
     var shown = "", view = viewOf(cfg), mode = modeOf(cfg), page = pageOf(cfg);
     var webEl = doc.createElement("div"), aiEl = doc.createElement("div");
     webEl.id = "mule-web";
@@ -416,6 +392,11 @@
     } else {
       host.replaceChildren(view === "ai" ? aiEl : webEl);
     }
+    var cache = {}, known = {}, clickT = null, clickTo = null, clickNote = "", sigNote = "", act = { phase: "idle" }, skew = 0;
+    api.sig = { ok: 0, refused: 0, old: 0, same: 0 };
+    api.draws = 0;
+    api.clickMs = [];
+    api.cache = cache;
     function say(s) { if (status) status.textContent = s; }
     function onPress(b) {
       var to = navTarget(b.cmd);
@@ -423,23 +404,6 @@
       clickT = root.performance.now();
       clickTo = to;
       go(to);
-    }
-    // ACT5: the statement's activity record is the op pipeline state; at receipt with a target page every
-    // viewer moves once per (at, target) through the same NAV4 path.
-    var act = { phase: "idle", pace: true }, followed = {};
-    function actSeen(a) {
-      if (!a || typeof a.phase !== "string") return;
-      act = a;
-      api.act = a;
-      // why: a bot's move (bot-vs-bot background game) highlights its page but never moves a viewer.
-      if (a.actor === "bot") return;
-      // ACT5: viewers go to the acting page at announce (to see the highlight) and to the target at receipt,
-      // once per (at, target, phase); the record may arrive in any page's statement.
-      var to = a.phase === "announce" ? a.page : a.phase === "receipt" ? a.to : null, key = a.at + " " + a.target + " " + a.phase;
-      if (to && !followed[key] && PAGE_RE.test(to)) {
-        followed[key] = 1;
-        if (to !== page) go(to);
-      }
     }
     function go(to) {
       // NAV4: the page lives in the address, so a reload stays on it; the view and mode params are kept.
@@ -449,26 +413,17 @@
       page = to;
       show(to);
     }
-    // CACHE2: a page switch draws the cached statement at once, then reads the snapshot in the background;
-    // the snapshot redraws only when its rev is newer (RT1).
+    // CACHE2: a page switch draws the cached statement at once, then reads the snapshot in the background.
     function show(to) {
       if (cache[to]) apply(to, cache[to]);
       refresh();
     }
     root.addEventListener && root.addEventListener("popstate", function () { page = pageOf(cfg); show(page); });
-    // RT1 + CACHE1: one cache entry per page object {rev, updated_at, statement} and one base (last full row,
-    // DIFF3); rows of any page update its entry; an older rev never replaces a newer one; only the current
-    // page is drawn.
-    var live = false, client = null, ch = null, cache = {}, base = {}, known = {}, clickT = null, clickTo = null, clickNote = "";
-    api.patches = { applied: 0, refused: 0 };
-    api.clickMs = [];
-    api.cache = cache;
-    function store(p, row, live) {
+    // RT1 + CACHE1: one cache entry per page; an older rev never replaces a newer one; only the current page is drawn.
+    function store(p, row) {
       if (!row || !row.statement || (cache[p] && row.rev < cache[p].rev)) return false;
-      cache[p] = { rev: row.rev, updated_at: row.updated_at, statement: row.statement, patched: !!row.patched };
-      // why: only a live broadcast row may move the viewer; a snapshot or prefetch can carry an old record.
-      if (live && p !== page) actSeen(row.statement.activity);
-      if (!row.patched) base[p] = { rev: row.rev, st: row.statement };
+      cache[p] = { rev: row.rev, updated_at: row.updated_at, statement: row.statement, issued_at: row.issued_at,
+        next_s: row.next_s, fresh_s: row.fresh_s };
       discover(row.statement);
       return true;
     }
@@ -479,11 +434,39 @@
         if (to && !known[to]) { known[to] = 1; prefetch(to); }
       });
     }
-    function prefetch(p) {
-      fetchLatest(cfg, p).then(function (row) { if (row) apply(p, row); }).catch(function () { known[p] = 0; });
+    // SIG2: rev only moves forward per page: a verified but not newer snapshot (replay, an old CDN copy) is dropped.
+    function take(p, row) {
+      if (!row) return false;
+      if (row === SAME) { api.sig.same += 1; return false; }
+      if (row.signed) {
+        api.sig.ok += 1;
+        if (cache[p] && row.rev <= cache[p].rev) { api.sig.old += 1; return false; }
+        var lag = Date.parse(row.issued_at) - Date.now();
+        if (lag > skew) skew = lag;
+        sigNote = "";
+      }
+      apply(p, row);
+      return true;
     }
-    function apply(want, row, live) {
-      if (!store(want, row, live) || want !== page) return;
+    function failed(e, p) {
+      if (e && e.unverified) {
+        api.sig.refused += 1;
+        sigNote = " | snapshot failed verification: dropped, last verified frame kept";
+        if (status && status.textContent.indexOf(sigNote) < 0) status.textContent += sigNote;
+      } else if (e && e.cannot) {
+        webEl.replaceChildren();
+        aiEl.replaceChildren();
+        say("cannot verify: this browser has no Ed25519 in WebCrypto, so nothing is shown");
+      } else if (p === page) {
+        say("read failed: " + (e && e.message));
+      }
+      if (p !== page) known[p] = 0;
+    }
+    function prefetch(p) {
+      fetchLatest(cfg, p).then(function (row) { take(p, row); }).catch(function (e) { failed(e, p); });
+    }
+    function apply(want, row) {
+      if (!store(want, row) || want !== page) return;
       var e = cache[want], st = e.statement, F = frameOf(st);
       // G0: one projection needs cell = char box; refuse to paint a statement that breaks it.
       if (!F.ok || st.grid.cell_w !== st.grid.char_w || st.grid.cell_h !== st.grid.char_h) {
@@ -493,9 +476,11 @@
       if (want + ":" + e.rev !== shown) {
         if (view !== "ai") draw(doc, webEl, st, onPress);
         if (view !== "web") drawAi(doc, aiEl, st, view === "ai" ? mode : "aiv");
+        api.draws += 1;
         api.last = st;
         shown = want + ":" + e.rev;
-        if (live) actSeen(st.activity); else { act = st.activity || act; api.act = act; }
+        act = st.activity || act;
+        api.act = act;
         if (clickT != null && clickTo === want) {
           var t0 = clickT;
           clickT = null;
@@ -509,60 +494,44 @@
         }
       }
       say("page " + want + " | rev " + e.rev + " | " + st.summary.nodes + " nodes | updated " + e.updated_at +
-        " | view " + view + (view === "ai" ? " mode " + mode : "") + " | " + (live ? "realtime" : "polling") +
-        " | act: " + act.phase + " | pace: " + (act.pace === false ? "off" : "on") + clickNote);
+        " | view " + view + (view === "ai" ? " mode " + mode : "") + " | " + (cfg.local ? "local polling" : "signed pull, every " + every() / 1000 + " s") +
+        " | act: " + act.phase + clickNote + sigNote);
     }
-    // RT1 entry for every broadcast row of any page: a full row is stored as is, a patch goes through DIFF3-DIFF5.
-    function receive(row) {
-      if (!row || !PAGE_RE.test(row.page || "") || doc.visibilityState === "hidden") return;
-      var p = row.page;
-      if (row.statement) { apply(p, row, true); return; }
-      var b = base[p];
-      if (row.t !== "p" || !b || b.rev !== row.base_rev || (cache[p] && row.rev <= cache[p].rev)) return;
-      patchOf(b.st, row).then(function (st) {
-        api.patches.applied += 1;
-        apply(p, { rev: row.rev, updated_at: "patch on " + row.base_rev, statement: st, patched: true }, true);
-      }, function () {
-        // DIFF5: a patch that does not reproduce its digests is dropped; that page's snapshot is read instead.
-        api.patches.refused += 1;
-        if (p === page) refresh(); else prefetch(p);
-      });
-    }
-    api.receive = receive;
     function refresh() {
       var want = page;
       return fetchLatest(cfg, want).then(function (row) {
-        if (!row) { if (want === page) say("no statement yet for " + cfg.app + " page " + want); return; }
-        apply(want, row);
-      }).catch(function (e) { say("read failed: " + e.message); });
+        if (!row && want === page) say("no statement yet for " + cfg.app + " page " + want);
+        take(want, row);
+      }).catch(function (e) { failed(e, want); });
     }
-    // RT2: subscribe to the public broadcast topic <app>, event "statement", with the publishable key;
-    // RT3: any status other than SUBSCRIBED (error, timeout, closed) or a missing client = polling.
-    function subscribe() {
-      if (ch || !cfg.key || !(root.supabase && root.supabase.createClient)) return;
-      try {
-        client = client || root.supabase.createClient(cfg.url, cfg.key);
-        ch = client.channel(cfg.topic || cfg.app);
-        ch.on("broadcast", { event: "statement" }, function (msg) { receive(msg && msg.payload); }).subscribe(function (s) {
-          live = s === "SUBSCRIBED";
-          api.live = live;
-          api.rtStatus = s;
-          if (!live && ch && s !== "SUBSCRIBED") refresh();
-        });
-      } catch (e) { live = false; ch = null; }
+    // POLL1: the interval is the signed next_s of the shown page, clamped to [30, 900] s (cfg.poll_ms wins, local
+    // review and tests); +-10 % jitter; a hidden tab reads nothing and reads once when it comes back.
+    function every() {
+      if (cfg.poll_ms) return cfg.poll_ms;
+      var n = (cache[page] && cache[page].next_s) || 60;
+      return Math.min(900, Math.max(30, n)) * 1000;
     }
-    // RT4: a hidden tab leaves the channel and stops polling; back in front it reads the snapshot and rejoins.
-    function unsubscribe() {
-      if (ch && client) { try { client.removeChannel(ch); } catch (e) { /* closed already */ } }
-      ch = null;
-      live = false;
-      api.live = false;
+    function tick() {
+      if (doc.visibilityState !== "hidden" && (page === cfg.home || known[page])) refresh();
+      root.setTimeout(tick, every() * (cfg.poll_ms ? 1 : 0.9 + 0.2 * Math.random()));
+    }
+    // CLOCK1: the page clock is the viewer clock moved forward when a signed issued_at shows it runs behind; stale
+    // when the shown snapshot is older than fresh_s + next_s + 120 s (the loop re-signs a quiet page each fresh_s).
+    function clock() {
+      var e = cache[page], now = Date.now() + skew;
+      if (!clockEl) return;
+      var text = "page clock " + utc(now);
+      if (e && e.issued_at) {
+        var t = Date.parse(e.issued_at), late = now - t > ((e.fresh_s || 3600) + (e.next_s || 60) + 120) * 1000;
+        text += " | statement signed " + utc(t) + (late ? " | stale: no newer signed snapshot" : "");
+      }
+      clockEl.textContent = text;
     }
     // NAV5: a page that is not the home page and is not named by any nav target is unknown: say so in the
     // status line with a link home, and request nothing for it.
     if (page !== cfg.home) {
       fetchLatest(cfg, cfg.home).then(function (row) {
-        if (row) apply(cfg.home, row);
+        if (row && row !== SAME) take(cfg.home, row);
         if (known[page]) { show(page); return; }
         if (status) {
           status.textContent = "unknown page " + page + " | ";
@@ -571,18 +540,13 @@
           a.textContent = "open " + cfg.home;
           status.appendChild(a);
         }
-      }).catch(function (e) { say("read failed: " + e.message); });
+      }).catch(function (e) { failed(e, cfg.home); });
     } else {
       refresh();
     }
-    subscribe();
-    // why: polling runs only while the realtime path is down, and never in a hidden tab (free Storage egress).
-    setInterval(function () { if (doc.visibilityState !== "hidden" && !live && (page === cfg.home || known[page])) refresh(); }, cfg.poll_ms || 10000);
-    doc.addEventListener("visibilitychange", function () {
-      if (doc.visibilityState === "hidden") { unsubscribe(); return; }
-      refresh();
-      subscribe();
-    });
+    root.setTimeout(tick, every());
+    if (clockEl && !cfg.local) { clock(); root.setInterval(clock, 1000); }
+    doc.addEventListener("visibilitychange", function () { if (doc.visibilityState !== "hidden") refresh(); });
   }
 
   var api = { plan: plan, runs: runs, frameOf: frameOf, navTarget: navTarget, pageOf: pageOf, draw: draw, drawAi: drawAi, viewOf: viewOf, modeOf: modeOf,
